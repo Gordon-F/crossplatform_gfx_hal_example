@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "rust/game_lib",
+    "rust/game_bindings",
+    "rust/game_desktop"
+]

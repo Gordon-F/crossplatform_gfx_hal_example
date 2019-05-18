@@ -1,0 +1,18 @@
+[package]
+name = "game_bindings"
+version = "0.1.0"
+authors = ["Igor Shaposhnik"]
+edition = "2018"
+
+[lib]
+name = "game_bindings"
+crate-type = ["staticlib", "cdylib"]
+
+[features]
+metal = ["game_lib/metal"]
+
+[dependencies]
+game_lib = { path = "../game_lib"}
+
+[build-dependencies]
+cbindgen = "0.8.6"

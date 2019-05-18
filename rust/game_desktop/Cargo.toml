@@ -1,0 +1,14 @@
+[package]
+name = "game_desktop"
+version = "0.1.0"
+authors = ["Igor Shaposhnik"]
+edition = "2018"
+
+[features]
+mac = ["game_lib/metal"]
+linux = ["game_lib/vulkan"]
+pc_dx12 = ["game_lib/dx12"]
+pc_dx11 = ["game_lib/dx11"]
+
+[dependencies]
+game_lib = { path = "../game_lib"}

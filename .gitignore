@@ -1,0 +1,9 @@
+.idea
+.vscode
+**/target
+**/*.rs.bk
+*.a
+*.DS_Store
+bindings.h
+**/generated/**
+**/*xcodeproj/**

@@ -1,0 +1,46 @@
+name: rust-game
+options:
+    bundleIdPrefix: com.rust
+configs:
+    Debug: debug
+    Release: release
+targets:
+    cargo:
+        type: ""
+        platform: iOS
+        legacy:
+            toolPath: /bin/sh
+            arguments: "build_rust_deps.sh"
+            workingDirectory: "./"
+    game:
+        sources: src
+        type: application
+        platform: iOS
+        deploymentTarget: "12.2"
+        scheme:
+            environmentVariables:
+              - variable: RUST_BACKTRACE
+                value: 1
+                isEnabled: true
+        settings:
+            base:
+                OTHER_LDFLAGS: ["$(inherited)", "-lgame_bindings"]
+                ENABLE_BITCODE: NO
+                CLANG_CXX_LANGUAGE_STANDARD: c++14
+                CLANG_CXX_LIBRARY: libc++
+            configs:
+                debug:
+                    HEADER_SEARCH_PATHS: ["$(inherited)", "../rust/game_bindings"]
+                    LIBRARY_SEARCH_PATHS: ["$(inherited)", "../target/aarch64-apple-ios/debug"]
+                release:
+                    HEADER_SEARCH_PATHS: ["$(inherited)", "../rust/game_bindings"]
+                    LIBRARY_SEARCH_PATHS: ["$(inherited)", "../target/aarch64-apple-ios/release"]
+        dependencies:
+            - sdk: libresolv.tbd
+            - sdk: libc++.tbd
+            - target: cargo
+              embed: false  
+        info:
+            path: src/Info.plist
+            properties:
+                UILaunchStoryboardName: LaunchScreen
