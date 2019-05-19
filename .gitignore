@@ -7,3 +7,4 @@
 bindings.h
 **/generated/**
 **/*xcodeproj/**
+.gradle

@@ -365,6 +365,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "game_android"
+version = "0.1.0"
+dependencies = [
+ "game_lib 0.1.0",
+]
+
+[[package]]
 name = "game_bindings"
 version = "0.1.0"
 dependencies = [

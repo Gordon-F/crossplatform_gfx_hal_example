@@ -1,0 +1,25 @@
+[package]
+name = "game_android"
+version = "0.1.0"
+authors = ["Igor Shaposhnik"]
+edition = "2018"
+
+[dependencies]
+game_lib = { path = "../game_lib", features = ["vulkan"] }
+
+[package.metadata.android]
+package_name = "com.rust.game"
+label = "HalGame"
+# Vulkan supports on devices running Android API level 24 or higher.
+android_version = 24
+target_sdk_version = 24
+min_sdk_version = 24
+fullscreen = true
+build_targets = [ "armv7-linux-androideabi" ]
+
+[package.metadata.android.application_attributes]
+"android:hardwareAccelerated" = "true"
+
+[package.metadata.android.activity_attributes]
+"android:screenOrientation" = "unspecified"
+"android:uiOptions" = "none"
