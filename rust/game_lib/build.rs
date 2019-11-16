@@ -3,7 +3,7 @@ extern crate shaderc;
 use shaderc::ShaderKind;
 use std::error::Error;
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-changed=data");
 
     let shader_gen_path = "data/shaders/generated/";
