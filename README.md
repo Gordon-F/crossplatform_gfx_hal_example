@@ -28,7 +28,7 @@ xcodegen
 ## Android (Vulkan)
 
 1. Install Rust Android targets: `rustup target add armv7-linux-androideabi`
-1. Install [cargo-apk](https://github.com/rust-windowing/android-rs-glue): `cargo install --git git@github.com:rust-windowing/android-rs-glue.git cargo-apk`
+1. Install [cargo-apk](https://github.com/rust-windowing/android-rs-glue): `cargo install --git https://github.com/rust-windowing/android-rs-glue.git cargo-apk`
 1. Install the OpenJDK (1.8)
 1. Install the CMake
 1. Install Android SDK

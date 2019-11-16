@@ -6,9 +6,12 @@ edition = "2018"
 
 [features]
 mac = ["game_lib/metal"]
+mac_vulkan = ["game_lib/vulkan"]
 linux = ["game_lib/vulkan"]
 pc_dx12 = ["game_lib/dx12"]
 pc_dx11 = ["game_lib/dx11"]
+pc_vulkan = ["game_lib/vulkan"]
+
 
 [dependencies]
 game_lib = { path = "../game_lib"}

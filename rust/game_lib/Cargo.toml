@@ -14,32 +14,34 @@ vulkan = ["gfx-backend-vulkan"]
 unstable = []
 
 [dependencies]
-env_logger = "0.6"
 image = "0.21"
 log = "0.4"
-winit = "0.19"
-gfx-hal = "0.2"
+winit = "0.20.0-alpha4"
+hal = { version = "0.4", package = "gfx-hal" }
+
+[target.'cfg(debug_assertions)'.dependencies]
+env_logger = "0.6"
 
 [dependencies.gfx-backend-gl]
-version = "0.2"
+version = "0.4"
 features = ["glutin"]
 optional = true
 
 [dependencies.gfx-backend-vulkan]
-version = "0.2"
+version = "0.4"
 optional = true
 
 [target.'cfg(any(target_os = "macos", all(target_os = "ios", target_arch = "aarch64")))'.dependencies.gfx-backend-metal]
-version = "0.2"
+version = "0.4"
 optional = true
 
 [target.'cfg(windows)'.dependencies.gfx-backend-dx11]
-version = "0.2"
+version = "0.4"
 optional = true
 
 [target.'cfg(windows)'.dependencies.gfx-backend-dx12]
-version = "0.2"
+version = "0.4"
 optional = true
 
 [build-dependencies]
-shaderc = "0.5"
+shaderc = "0.6"
