@@ -15,4 +15,4 @@ metal = ["game_lib/metal"]
 game_lib = { path = "../game_lib"}
 
 [build-dependencies]
-cbindgen = "0.9"
+cbindgen = "0.14"

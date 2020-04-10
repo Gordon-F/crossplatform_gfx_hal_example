@@ -96,35 +96,37 @@ const COLOR_RANGE: i::SubresourceRange = i::SubresourceRange {
 pub fn main_rs() -> std::os::raw::c_int {
     #[cfg(target_arch = "wasm32")]
     console_log::init_with_level(log::Level::Debug).unwrap();
-    #[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
     env_logger::init();
 
     let event_loop = winit::event_loop::EventLoop::new();
 
-    let dpi = event_loop.primary_monitor().hidpi_factor();
     let wb = winit::window::WindowBuilder::new()
-        .with_min_inner_size(winit::dpi::LogicalSize::new(1.0, 1.0))
-        .with_inner_size(winit::dpi::LogicalSize::from_physical(
-            winit::dpi::PhysicalSize::new(DIMS.width as _, DIMS.height as _),
-            dpi,
-        ))
+        .with_min_inner_size(winit::dpi::Size::Logical(winit::dpi::LogicalSize::new(
+            64.0, 64.0,
+        )))
+        .with_inner_size(winit::dpi::Size::Physical(winit::dpi::PhysicalSize::new(
+            DIMS.width,
+            DIMS.height,
+        )))
         .with_title("quad".to_string());
 
     // instantiate backend
     #[cfg(not(feature = "gl"))]
     let (_window, instance, mut adapters, surface) = {
         let window = wb.build(&event_loop).unwrap();
-        let instance = back::Instance::create("gfx-rs quad", 1)
-            .expect("Failed to create an instance!");
+        let instance =
+            back::Instance::create("gfx-rs quad", 1).expect("Failed to create an instance!");
         let surface = unsafe {
-            instance.create_surface(&window).expect("Failed to create a surface!")
+            instance
+                .create_surface(&window)
+                .expect("Failed to create a surface!")
         };
         let adapters = instance.enumerate_adapters();
         // Return `window` so it is not dropped: dropping it invalidates `surface`.
         (window, Some(instance), adapters, surface)
     };
     #[cfg(feature = "gl")]
-    let (window, instance, mut adapters, surface) = {
+    let (_window, instance, mut adapters, surface) = {
         #[cfg(not(target_arch = "wasm32"))]
         let (window, surface) = {
             let builder =
@@ -143,7 +145,13 @@ pub fn main_rs() -> std::os::raw::c_int {
         #[cfg(target_arch = "wasm32")]
         let (window, surface) = {
             let window = wb.build(&event_loop).unwrap();
-            web_sys::window().unwrap().document().unwrap().body().unwrap().append_child(&winit::platform::web::WindowExtWebSys::canvas(&window));
+            web_sys::window()
+                .unwrap()
+                .document()
+                .unwrap()
+                .body()
+                .unwrap()
+                .append_child(&winit::platform::web::WindowExtWebSys::canvas(&window));
             let surface = back::Surface::from_raw_handle(&window);
             (window, surface)
         };
@@ -185,17 +193,17 @@ pub fn main_rs() -> std::os::raw::c_int {
                     #[cfg(all(feature = "gl", not(target_arch = "wasm32")))]
                     {
                         let context = renderer.surface.context();
-                        context.resize(dims.to_physical(window.hidpi_factor()));
+                        context.resize(dims);
                     }
                     renderer.dimensions = window::Extent2D {
-                        width: (dims.width * dpi) as u32,
-                        height: (dims.height * dpi) as u32,
+                        width: dims.width,
+                        height: dims.height,
                     };
                     renderer.recreate_swapchain();
                 }
                 _ => {}
             },
-            winit::event::Event::EventsCleared => {
+            winit::event::Event::RedrawEventsCleared => {
                 renderer.render();
             }
             _ => {}
@@ -243,7 +251,7 @@ where
     fn new(
         instance: Option<B::Instance>,
         mut surface: B::Surface,
-        adapter: hal::adapter::Adapter<B>
+        adapter: hal::adapter::Adapter<B>,
     ) -> Renderer<B> {
         let memory_types = adapter.physical_device.memory_properties().memory_types;
         let limits = adapter.physical_device.limits();
@@ -277,7 +285,11 @@ where
                     &[
                         pso::DescriptorSetLayoutBinding {
                             binding: 0,
-                            ty: pso::DescriptorType::SampledImage,
+                            ty: pso::DescriptorType::Image {
+                                ty: pso::ImageDescriptorType::Sampled {
+                                    with_sampler: false,
+                                },
+                            },
                             count: 1,
                             stage_flags: ShaderStageFlags::FRAGMENT,
                             immutable_samplers: false,
@@ -303,7 +315,11 @@ where
                     1, // sets
                     &[
                         pso::DescriptorRangeDesc {
-                            ty: pso::DescriptorType::SampledImage,
+                            ty: pso::DescriptorType::Image {
+                                ty: pso::ImageDescriptorType::Sampled {
+                                    with_sampler: false,
+                                },
+                            },
                             count: 1,
                         },
                         pso::DescriptorRangeDesc {
@@ -325,7 +341,9 @@ where
         let buffer_stride = mem::size_of::<Vertex>() as u64;
         let buffer_len = QUAD.len() as u64 * buffer_stride;
         assert_ne!(buffer_len, 0);
-        let padded_buffer_len = ((buffer_len + non_coherent_alignment - 1) / non_coherent_alignment) * non_coherent_alignment;
+        let padded_buffer_len = ((buffer_len + non_coherent_alignment - 1)
+            / non_coherent_alignment)
+            * non_coherent_alignment;
 
         let mut vertex_buffer = ManuallyDrop::new(
             unsafe { device.create_buffer(padded_buffer_len, buffer::Usage::VERTEX) }.unwrap(),
@@ -348,11 +366,17 @@ where
 
         // TODO: check transitions: read/write mapping and vertex buffer read
         let buffer_memory = unsafe {
-            let memory = device.allocate_memory(upload_type, buffer_req.size).unwrap();
-            device.bind_buffer_memory(&memory, 0, &mut vertex_buffer).unwrap();
-            let mapping = device.map_memory(&memory, 0 .. padded_buffer_len).unwrap();
+            let memory = device
+                .allocate_memory(upload_type, buffer_req.size)
+                .unwrap();
+            device
+                .bind_buffer_memory(&memory, 0, &mut vertex_buffer)
+                .unwrap();
+            let mapping = device.map_memory(&memory, m::Segment::ALL).unwrap();
             ptr::copy_nonoverlapping(QUAD.as_ptr() as *const u8, mapping, buffer_len as usize);
-            device.flush_mapped_memory_ranges(iter::once((&memory, 0 .. padded_buffer_len))).unwrap();
+            device
+                .flush_mapped_memory_ranges(iter::once((&memory, m::Segment::ALL)))
+                .unwrap();
             device.unmap_memory(&memory);
             ManuallyDrop::new(memory)
         };
@@ -369,18 +393,25 @@ where
         let image_stride = 4usize;
         let row_pitch = (width * image_stride as u32 + row_alignment_mask) & !row_alignment_mask;
         let upload_size = (height * row_pitch) as u64;
-        let padded_upload_size = ((upload_size + non_coherent_alignment - 1) / non_coherent_alignment) * non_coherent_alignment;
+        let padded_upload_size = ((upload_size + non_coherent_alignment - 1)
+            / non_coherent_alignment)
+            * non_coherent_alignment;
 
         let mut image_upload_buffer = ManuallyDrop::new(
-            unsafe { device.create_buffer(padded_upload_size, buffer::Usage::TRANSFER_SRC) }.unwrap(),
+            unsafe { device.create_buffer(padded_upload_size, buffer::Usage::TRANSFER_SRC) }
+                .unwrap(),
         );
         let image_mem_reqs = unsafe { device.get_buffer_requirements(&image_upload_buffer) };
 
         // copy image data into staging buffer
         let image_upload_memory = unsafe {
-            let memory = device.allocate_memory(upload_type, image_mem_reqs.size).unwrap();
-            device.bind_buffer_memory(&memory, 0, &mut image_upload_buffer).unwrap();
-            let mapping = device.map_memory(&memory, 0 .. padded_upload_size).unwrap();
+            let memory = device
+                .allocate_memory(upload_type, image_mem_reqs.size)
+                .unwrap();
+            device
+                .bind_buffer_memory(&memory, 0, &mut image_upload_buffer)
+                .unwrap();
+            let mapping = device.map_memory(&memory, m::Segment::ALL).unwrap();
             for y in 0 .. height as usize {
                 let row = &(*img)[y * (width as usize) * image_stride
                     .. (y + 1) * (width as usize) * image_stride];
@@ -390,7 +421,9 @@ where
                     width as usize * image_stride,
                 );
             }
-            device.flush_mapped_memory_ranges(iter::once((&memory, 0 .. padded_upload_size))).unwrap();
+            device
+                .flush_mapped_memory_ranges(iter::once((&memory, m::Segment::ALL)))
+                .unwrap();
             device.unmap_memory(&memory);
             ManuallyDrop::new(memory)
         };
@@ -618,14 +651,9 @@ where
                     .create_semaphore()
                     .expect("Could not create semaphore"),
             );
-            submission_complete_fences.push(
-                device
-                    .create_fence(true)
-                    .expect("Could not create fence"),
-            );
-            cmd_buffers.push(unsafe {
-                cmd_pools[i].allocate_one(command::Level::Primary)
-            });
+            submission_complete_fences
+                .push(device.create_fence(true).expect("Could not create fence"));
+            cmd_buffers.push(unsafe { cmd_pools[i].allocate_one(command::Level::Primary) });
         }
 
         let pipeline_layout = ManuallyDrop::new(
@@ -837,7 +865,10 @@ where
             cmd_buffer.set_viewports(0, &[self.viewport.clone()]);
             cmd_buffer.set_scissors(0, &[self.viewport.rect]);
             cmd_buffer.bind_graphics_pipeline(&self.pipeline);
-            cmd_buffer.bind_vertex_buffers(0, iter::once((&*self.vertex_buffer, 0)));
+            cmd_buffer.bind_vertex_buffers(
+                0,
+                iter::once((&*self.vertex_buffer, buffer::SubRange::WHOLE)),
+            );
             cmd_buffer.bind_graphics_descriptor_sets(
                 &self.pipeline_layout,
                 0,
@@ -927,8 +958,7 @@ where
             }
             self.device
                 .destroy_render_pass(ManuallyDrop::into_inner(ptr::read(&self.render_pass)));
-            self.surface
-              .unconfigure_swapchain(&self.device);
+            self.surface.unconfigure_swapchain(&self.device);
             self.device
                 .free_memory(ManuallyDrop::into_inner(ptr::read(&self.buffer_memory)));
             self.device

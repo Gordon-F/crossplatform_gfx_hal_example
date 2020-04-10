@@ -43,4 +43,7 @@ targets:
         info:
             path: src/Info.plist
             properties:
+                UIRequiresFullScreen: true
+                UIStatusBarHidden: true
+                UISupportedInterfaceOrientations: [UIInterfaceOrientationLandscapeRight]
                 UILaunchStoryboardName: LaunchScreen
